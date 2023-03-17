@@ -1,0 +1,6 @@
+#! /usr/bin/env bash
+
+set -euo pipefail
+
+echo -e '\nChallenge #1: Echo'
+./maelstrom/maelstrom test -w echo --bin bin/echo --node-count 1 --time-limit 10
