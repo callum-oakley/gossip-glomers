@@ -13,7 +13,7 @@ test-2:
 		--node-count 3 --availability total --nemesis partition
 
 .PHONY: test-3
-test-3: test-3a test-3b
+test-3: test-3a test-3b test-3c
 
 .PHONY: test-3a
 test-3a:
@@ -24,3 +24,8 @@ test-3a:
 test-3b:
 	${maelstrom} test -w broadcast --bin bin/broadcast --node-count 5 \
 		--time-limit 20 --rate 10
+
+.PHONY: test-3c
+test-3c:
+	${maelstrom} test -w broadcast --bin bin/broadcast --node-count 5 \
+		--time-limit 20 --rate 10 --nemesis partition
