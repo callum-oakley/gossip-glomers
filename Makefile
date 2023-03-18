@@ -1,7 +1,7 @@
 maelstrom = ./maelstrom/maelstrom
 
 .PHONY: test
-test: test-1 test-2 test-3a
+test: test-1 test-2 test-3
 
 .PHONY: test-1
 test-1:
@@ -12,7 +12,15 @@ test-2:
 	${maelstrom} test -w unique-ids --bin bin/uuid --time-limit 30 --rate 1000 \
 		--node-count 3 --availability total --nemesis partition
 
+.PHONY: test-3
+test-3: test-3a test-3b
+
 .PHONY: test-3a
 test-3a:
 	${maelstrom} test -w broadcast --bin bin/broadcast --node-count 1 \
+		--time-limit 20 --rate 10
+
+.PHONY: test-3b
+test-3b:
+	${maelstrom} test -w broadcast --bin bin/broadcast --node-count 5 \
 		--time-limit 20 --rate 10
