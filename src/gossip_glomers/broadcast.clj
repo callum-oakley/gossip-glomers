@@ -1,32 +1,42 @@
 (ns gossip-glomers.broadcast
   (:require [gossip-glomers.node :as node]))
 
-(def state (atom {:messages #{}}))
+(defn gossip [state dests]
+  (run! (fn [batch]
+          (when-let [dest (first batch)]
+            (node/post state dest {:type "gossip"
+                                   :messages (:messages @state)
+                                   :dests (rest batch)})))
+        (split-at (quot (count dests) 2) (shuffle dests))))
 
-(defn gossip [node topology]
-  (loop []
-    (run! #(node/post node % {:type "gossip" :messages (:messages @state)})
-          (topology (:id node)))
-    (Thread/sleep 1000)
-    (recur)))
-
-(defn handle [node {:keys [body] :as msg}]
-  (case (:type body)
+(defn handle [state msg]
+  (case (:type (:body msg))
     "broadcast"
     (do
-      (swap! state update :messages conj (:message body))
-      (node/respond node msg {:type "broadcast_ok"}))
+      (swap! state update :messages (fnil conj #{}) (:message (:body msg)))
+      (swap! state assoc :recent-broadcast? true)
+      (gossip state (remove #{(:node-id @state)} (:node-ids @state)))
+      (node/reply state msg {:type "broadcast_ok"}))
 
     "read"
-    (node/respond node msg {:type "read_ok" :messages (:messages @state)})
+    (node/reply state msg {:type "read_ok" :messages (:messages @state)})
 
     "topology"
-    (do
-      (future (gossip node (update-keys (:topology body) name)))
-      (node/respond node msg {:type "topology_ok"}))
+    (node/reply state msg {:type "topology_ok"})
     
     "gossip"
-    (swap! state update :messages into (:messages body))))
+    (do
+      (swap! state update :messages (fnil into #{}) (:messages (:body msg)))
+      (gossip state (:dests (:body msg))))))
+
+(defn on-init [state]
+  (future
+    (loop []
+      (Thread/sleep 1000)
+      (when-not (:recent-broadcast? @state)
+        (gossip state (remove #{(:node-id @state)} (:node-ids @state))))
+      (swap! state assoc :recent-broadcast? false)
+      (recur))))
 
 (defn -main []
-  (node/run (node/init) handle))
+  (node/run handle on-init))
