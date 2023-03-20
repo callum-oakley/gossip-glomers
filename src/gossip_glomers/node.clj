@@ -44,28 +44,27 @@
         (reply-handler state :timeout)))))
 
 (defn run
-  "Run a node with the given message handler; a function of state and message."
-  ([handler on-init]
-   (let [state (atom nil)]
-     (loop []
-       (let [msg (read-msg)]
-         (cond
-           (= "init" (:type (:body msg)))
-           (do
-             (swap! state assoc
-                    :node-id (:node_id (:body msg))
-                    :node-ids (:node_ids (:body msg)))
-             (on-init state)
-             (reply state msg {:type "init_ok"}))
+  "Run a node with the given message handler; a function of state and message.
+   Use init to initialise any state that the node needs."
+  [init handler]
+  (let [state (atom nil)]
+    (loop []
+      (let [msg (read-msg)]
+        (cond
+          (= "init" (:type (:body msg)))
+          (do
+            (swap! state assoc
+                   :node-id (:node_id (:body msg))
+                   :node-ids (:node_ids (:body msg)))
+            (init state)
+            (reply state msg {:type "init_ok"}))
 
-           (:in_reply_to (:body msg))
-           (let [msg-id (:in_reply_to (:body msg))]
-             (when-let [reply-handler ((:reply-handlers @state) msg-id)]
-               (swap! state update :reply-handlers dissoc msg-id)
-               (reply-handler state msg)))
+          (:in_reply_to (:body msg))
+          (let [msg-id (:in_reply_to (:body msg))]
+            (when-let [reply-handler ((:reply-handlers @state) msg-id)]
+              (swap! state update :reply-handlers dissoc msg-id)
+              (reply-handler state msg)))
 
-           :else
-           (handler state msg)))
-       (recur))))
-  ([handler]
-   (run handler identity)))
+          :else
+          (handler state msg)))
+      (recur))))

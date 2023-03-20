@@ -7,4 +7,4 @@
                                       :id (str (java.util.UUID/randomUUID))})))
 
 (defn -main []
-  (node/run handle))
+  (node/run identity handle))

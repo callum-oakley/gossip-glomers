@@ -6,4 +6,4 @@
     "echo" (node/reply state msg {:type "echo_ok" :echo (:echo (:body msg))})))
 
 (defn -main []
-  (node/run handle))
+  (node/run identity handle))

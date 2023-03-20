@@ -34,3 +34,5 @@ test-3c:
 test-3d:
 	${maelstrom} test -w broadcast --bin bin/broadcast --node-count 25 \
 		--time-limit 20 --rate 100 --latency 100
+
+# 3e uses the same settings as 3d
