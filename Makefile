@@ -1,7 +1,7 @@
 maelstrom = ./maelstrom/maelstrom
 
 .PHONY: test
-test: test-1 test-2 test-3
+test: test-1 test-2 test-3 test-4
 
 .PHONY: test-1
 test-1:
@@ -36,3 +36,8 @@ test-3d:
 		--time-limit 20 --rate 100 --latency 100
 
 # 3e uses the same settings as 3d
+
+.PHONY: test-4
+test-4:
+	${maelstrom} test -w g-counter --bin src/counter.js --node-count 3 \
+		--rate 100 --time-limit 20 --nemesis partition
