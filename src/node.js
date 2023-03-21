@@ -10,7 +10,7 @@ export class Node {
 
   send(dest, body) {
     const s = JSON.stringify({ src: this.id, dest, body });
-    console.error("OUT", s);
+    console.error(new Date(), "OUT", s);
     console.log(s);
   }
 
@@ -28,7 +28,7 @@ export class Node {
 
   async run(handlers) {
     for await (const line of this.lines) {
-      console.error("IN", line);
+      console.error(new Date(), "IN", line);
       const msg = JSON.parse(line);
       if (msg.body.type === "init") {
         this.id = msg.body.node_id;
