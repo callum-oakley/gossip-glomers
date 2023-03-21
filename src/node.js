@@ -1,11 +1,12 @@
 import { TextLineStream } from "https://deno.land/std@0.180.0/streams/text_line_stream.ts";
 
 export class Node {
-  constructor() {
+  constructor(state) {
     this.lines = Deno.stdin.readable
       .pipeThrough(new TextDecoderStream())
       .pipeThrough(new TextLineStream());
     this.pending = {};
+    this.state = state;
   }
 
   send(dest, body) {
@@ -32,6 +33,7 @@ export class Node {
       const msg = JSON.parse(line);
       if (msg.body.type === "init") {
         this.id = msg.body.node_id;
+        this.nodes = msg.body.node_ids;
         this.peers = msg.body.node_ids.filter((id) => id !== this.id);
         if (handlers.init) {
           handlers.init(msg);

@@ -41,3 +41,18 @@ test-3d:
 test-4:
 	${maelstrom} test -w g-counter --bin src/counter.js --node-count 3 \
 		--rate 100 --time-limit 20 --nemesis partition
+
+.PHONY: test-5
+test-5: test-5a test-5b
+
+.PHONY: test-5a
+test-5a:
+	${maelstrom} test -w kafka --bin src/kafka.js --node-count 1 \
+		--concurrency 2n --time-limit 20 --rate 1000
+
+.PHONY: test-5b
+test-5b:
+	${maelstrom} test -w kafka --bin src/kafka.js --node-count 2 \
+		--concurrency 2n --time-limit 20 --rate 1000
+
+# 5c uses the same settings as 5b
