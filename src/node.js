@@ -5,6 +5,7 @@ export class Node {
     this.lines = Deno.stdin.readable
       .pipeThrough(new TextDecoderStream())
       .pipeThrough(new TextLineStream());
+    this.pending = {};
   }
 
   send(dest, body) {
@@ -15,6 +16,14 @@ export class Node {
 
   reply(msg, body) {
     this.send(msg.src, { ...body, in_reply_to: msg.body.msg_id });
+  }
+
+  request(dest, body) {
+    const msgID = crypto.randomUUID();
+    this.send(dest, { ...body, msg_id: msgID });
+    return new Promise((resolve, reject) => {
+      this.pending[msgID] = { resolve, reject };
+    });
   }
 
   async run(handlers) {
@@ -28,6 +37,13 @@ export class Node {
           handlers.init(msg);
         }
         this.reply(msg, { type: "init_ok" });
+      } else if (msg.body.in_reply_to) {
+        if (msg.body.type === "error") {
+          this.pending[msg.body.in_reply_to].reject(msg);
+        } else {
+          this.pending[msg.body.in_reply_to].resolve(msg);
+        }
+        delete this.pending[msg.body.in_reply_to];
       } else if (handlers[msg.body.type]) {
         handlers[msg.body.type](msg);
       } else {

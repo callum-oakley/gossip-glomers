@@ -2,49 +2,45 @@
 
 import { Node } from "./node.js";
 
-const state = {};
-
 const node = new Node();
 
 node.run({
-  init: (_) => {
-    for (const id of [node.id, ...node.peers]) {
-      state[id] = [];
-    }
-    setInterval(() => {
-      for (const peer of node.peers) {
-        node.send(peer, { type: "sync", index: state[peer].length });
+  init: (_) =>
+    node.request("seq-kv", {
+      type: "write",
+      key: "counter",
+      value: { version: 0, count: 0 },
+    }),
+  add: async (msg) => {
+    while (true) {
+      try {
+        const res = await node.request("seq-kv", {
+          type: "read",
+          key: "counter",
+        });
+        await node.request("seq-kv", {
+          type: "cas",
+          key: "counter",
+          from: res.body.value,
+          to: {
+            version: res.body.value.version + 1,
+            count: res.body.value.count + msg.body.delta,
+          },
+        });
+        node.reply(msg, { type: "add_ok" });
+        break;
+      } catch (err) {
+        if (err.body.code !== 22) {
+          throw err;
+        }
       }
-    }, 10000);
-  },
-  add: (msg) => {
-    state[node.id].push(msg.body.delta);
-    for (const peer of node.peers) {
-      node.send(peer, {
-        type: "update",
-        deltas: [msg.body.delta],
-        index: state[node.id].length - 1,
-      });
-    }
-    node.reply(msg, { type: "add_ok" });
-  },
-  update: (msg) => {
-    if (msg.body.index === state[msg.src].length) {
-      state[msg.src].push(...msg.body.deltas);
     }
   },
-  read: (msg) =>
+  read: async (msg) => {
+    const res = await node.request("seq-kv", { type: "read", key: "counter" });
     node.reply(msg, {
       type: "read_ok",
-      value: Object.values(state).flat().reduce((x, y) => x + y, 0),
-    }),
-  sync: (msg) => {
-    if (msg.body.index < state[node.id].length) {
-      node.send(msg.src, {
-        type: "update",
-        deltas: state[node.id].slice(msg.body.index),
-        index: msg.body.index,
-      });
-    }
+      value: res.body.value.count,
+    });
   },
 });
