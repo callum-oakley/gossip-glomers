@@ -12,37 +12,36 @@ function shard(key) {
 
 node.run({
   init: (_) => {
-    if (node.peers.length === 0) {
-      return;
-    }
-    setInterval(async () => {
-      const state = {};
-      for (const key in node.state) {
-        state[key] = {
-          offset: node.state[key].offset,
-          committed: node.state[key].committed,
-        };
-      }
-      const res = await node.request(randomElement(node.peers), {
-        type: "gossip",
-        state,
-      });
-      for (const key in res.body.state) {
-        if (!node.state[key]) {
-          node.state[key] = { msgs: [], offset: 0, committed: 0 };
+    if (node.peers.length) {
+      setInterval(async () => {
+        const state = {};
+        for (const key in node.state) {
+          state[key] = {
+            offset: node.state[key].offset,
+            committed: node.state[key].committed,
+          };
         }
-        for (const msg of res.body.state[key].msgs) {
-          if (msg[0] === node.state[key].offset) {
-            node.state[key].offset++;
-            node.state[key].msgs.push(msg);
+        const res = await node.request(randomElement(node.peers), {
+          type: "gossip",
+          state,
+        });
+        for (const key in res.body.state) {
+          if (!node.state[key]) {
+            node.state[key] = { msgs: [], offset: 0, committed: 0 };
           }
+          for (const msg of res.body.state[key].msgs) {
+            if (msg[0] === node.state[key].offset) {
+              node.state[key].offset++;
+              node.state[key].msgs.push(msg);
+            }
+          }
+          node.state[key].committed = Math.max(
+            node.state[key].committed,
+            res.body.state[key].committed
+          );
         }
-        node.state[key].committed = Math.max(
-          node.state[key].committed,
-          res.body.state[key].committed
-        );
-      }
-    }, 100);
+      }, 100);
+    }
   },
   send: async (msg) => {
     const owner = shard(msg.body.key);

@@ -1,7 +1,7 @@
 maelstrom = ./maelstrom/maelstrom
 
 .PHONY: test
-test: test-1 test-2 test-3 test-4
+test: test-1 test-2 test-3 test-4 test-5 test-6
 
 .PHONY: test-1
 test-1:
@@ -56,3 +56,26 @@ test-5b:
 		--concurrency 2n --time-limit 20 --rate 1000
 
 # 5c uses the same settings as 5b
+
+.PHONY: test-6
+test-6: test-6a test-6b test-6c
+
+.PHONY: test-6a
+test-6a:
+	${maelstrom} test -w txn-rw-register --bin src/txn.js --node-count 1 \
+		--time-limit 20 --rate 1000 --concurrency 2n \
+		--consistency-models read-uncommitted --availability total
+
+.PHONY: test-6b
+test-6b:
+	${maelstrom} test -w txn-rw-register --bin src/txn.js --node-count 2 \
+		--concurrency 2n --time-limit 20 --rate 1000 \
+		--consistency-models read-uncommitted --availability total \
+		--nemesis partition
+
+.PHONY: test-6c
+test-6c:
+	${maelstrom} test -w txn-rw-register --bin src/txn.js --node-count 2 \
+		--concurrency 2n --time-limit 20 --rate 1000 \
+		--consistency-models read-committed --availability total \
+		–-nemesis partition

@@ -13,19 +13,18 @@ const node = new Node(new Set());
 
 node.run({
   init: (_) => {
-    if (node.peers.length == 0) {
-      return;
+    if (node.peers.length) {
+      setTimeout(
+        () =>
+          setInterval(() => {
+            node.send(randomElement(node.peers), {
+              type: "gossip",
+              state: [...node.state],
+            });
+          }, 20),
+        100
+      );
     }
-    setTimeout(
-      () =>
-        setInterval(() => {
-          node.send(randomElement(node.peers), {
-            type: "gossip",
-            state: [...node.state],
-          });
-        }, 20),
-      100
-    );
   },
   topology: (msg) => node.reply(msg, { type: "topology_ok" }),
   broadcast: (msg) => {
